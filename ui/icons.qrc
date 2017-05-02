@@ -1,0 +1,16 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource>
+    <file>icons/edit.png</file>
+    <file>icons/error.png</file>
+    <file>icons/link.png</file>
+    <file>icons/log.png</file>
+    <file>icons/menu.png</file>
+    <file>icons/minus.png</file>
+    <file>icons/paperplane.png</file>
+    <file>icons/plus.png</file>
+    <file>icons/settings.png</file>
+    <file>icons/success.png</file>
+    <file>icons/television.png</file>
+    <file>icons/worldwide.png</file>
+</qresource>
+</RCC>
