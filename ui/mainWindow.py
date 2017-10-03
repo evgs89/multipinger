@@ -7,19 +7,18 @@ Module implementing MainWindow.
 from PyQt5.QtCore import pyqtSlot,  pyqtSignal, QAbstractTableModel, QVariant, Qt, QModelIndex, QPoint
 from PyQt5.QtWidgets import QMainWindow, QSystemTrayIcon, QHeaderView, QItemDelegate, QComboBox, QMenu
 from PyQt5.QtGui import QIcon, QPixmap, QBrush, QColor
-from time import sleep
 from datetime import datetime
 from .Ui_mainWindow import Ui_MainWindow
 from ui.addAddress import addAddress
 from ui.logView import logView
 from ui.settings import Settings
 from ui.browser import browser
-import configparser, threading, queue, os, platform, PyQt5.QtGui, sys
+import configparser,  subprocess, platform
 from ui.extClasses import pinger
 
 class loggingPinger(pinger):
-    def __init__(self, address, messages, timeout = 1):
-        pinger.__init__(self, address, messages, timeout)
+    def __init__(self, address, timeout = 1, messages = None):
+        pinger.__init__(self, address, timeout, messages)
         self.filename = 'logs/log_' + address + '.txt'
         self.__address = address
 
@@ -52,7 +51,6 @@ class loggingPinger(pinger):
     
 
 class Model(QAbstractTableModel):
-    stateChanged = pyqtSignal(str, bool)
     notificator = pyqtSignal(str, str, bool)
     active = True
     def __init__(self, parent):
@@ -61,37 +59,19 @@ class Model(QAbstractTableModel):
         self.config = configparser.ConfigParser(allow_no_value = True)
         self.config.read('settings.ini')
         self.adresses = {}
-        self.q = queue.Queue()
-        self.stateChanged.connect(self.on_hostStateChanged)
         if 'ipList' in self.config:
             index = 0
             for i in self.config['ipList']:
                 name = self.config[i]['name']
-                p = loggingPinger(i, self.q)
+                p = loggingPinger(i)
+                p.stateChangedSignal.connect(self.on_hostStateChanged)
                 c = 0
                 connectionMethod = self.config[i]['defaultAction']
                 self.adresses[i] = [False, c, i, name, datetime.now(), p, index, connectionMethod]
+                self.adresses[i][5].start()
                 index += 1
         self.colLabels = [' ', 'c', 'ip', 'name', 'since', 'cnct']
-        self.t = threading.Thread(target = self.pingCtrl, args = ())
-        self.t.daemon = True
-        self.t.start()
-    def pingCtrl(self):
-        for i in self.adresses:
-            self.adresses[i][5].start()
-        while self.active:
-            try:
-                out = self.q.get_nowait()
-            except queue.Empty:
-                sleep(0.1)
-            else:
-                if out:
-                    if out[0] in self.adresses:
-                        self.adresses[out[0]][0] = out[1]
-                        self.adresses[out[0]][4] = datetime.now()
-                    if out[1]: self.adresses[out[0]][1] += 1
-                    self.notificator.emit(out[0], self.adresses[out[0]][3], out[1])
-                    self.stateChanged.emit(out[0], out[1])    
+            
     def rowCount(self, parent):
         return len(self.adresses)
     def columnCount(self, parent):
@@ -140,7 +120,7 @@ class Model(QAbstractTableModel):
                 a = self.createIndex(index, 5)
                 self.dataChanged.emit(a, a)
         else:
-            p = loggingPinger(data['ip'], self.q)
+            p = loggingPinger(data['ip'])
             if index < len(self.adresses):
                 oldIp = sorted(self.adresses.items(), key = lambda item: item[1][6])[index][0]##редактирование существующего адреса
                 self.deleteRawData(oldIp)
@@ -151,9 +131,8 @@ class Model(QAbstractTableModel):
             if index == len(self.adresses):
                 self.adresses[data['ip']] = [False, 0, data['ip'], data['name'], datetime.now(), p, index, data['connection']]
                 self.layoutChanged.emit()
+            self.adresses[data['ip']][5].stateChangedSignal.connect(self.on_hostStateChanged)
             self.adresses[data['ip']][5].start()
-            print('started')
-            print(str(self.adresses[data['ip']][5].state))
         self.config['ipList'][data['ip']] = None
         self.config[data['ip']] = {}
         self.config[data['ip']]['name'] = data['name']
@@ -181,12 +160,16 @@ class Model(QAbstractTableModel):
             key = self.getRawData(i)[2]
             self.adresses[key][6] -= 1
         self.layoutChanged.emit()
-    def headerData(self, section, orientation, role):
+    def headerSettings(self, section, orientation, role):
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
             return QVariant(self.colLabels[section])
         return QVariant()
     def on_hostStateChanged(self, address, state):
         if address in self.adresses:
+            self.adresses[address][0] = state
+            self.adresses[address][4] = datetime.now()
+            if state: self.adresses[address][1] += 1
+            self.notificator.emit(address, self.adresses[address][3], state)
             row = self.adresses[address][6]
             a = self.createIndex(row, 0)
             b = self.createIndex(row, 4)
@@ -194,6 +177,8 @@ class Model(QAbstractTableModel):
     def flags(self, index):
         if index.column() == 5: return Qt.ItemIsEditable | Qt.ItemIsEnabled
         else: return Qt.ItemIsEnabled
+    def readConfig(self):
+        self.config.read('settings.ini')
     
 class comboDelegate(QItemDelegate):
     def __init__(self, parent):
@@ -239,6 +224,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.tableView.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeToContents)
         self.tableView.horizontalHeader().setSectionResizeMode(5, QHeaderView.Fixed)
         self.tableView.horizontalHeader().setVisible(False)
+        self.tableView.verticalHeader().setVisible(False)
         self.tableView.setColumnWidth(0, 23)
         self.tableView.setColumnWidth(5, 55)
         self.programIcon = QIcon()
@@ -249,6 +235,7 @@ class MainWindow(QMainWindow, Ui_MainWindow):
     def settingsChanged(self):
         config = configparser.ConfigParser(allow_no_value = True)
         config.read('settings.ini')
+        self.tableView.model().readConfig()
         if 'otherSettings' in config:
             if config['otherSettings']['showCount'] == 'False': self.tableView.setColumnHidden(1, True)
             else: self.tableView.setColumnHidden(1, False)
@@ -381,17 +368,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             for line in pathfile:
                 if line[:4] == 'rdp=' or line[:4] == 'RDP=': self.rdp = line[4:]
                 if line[:3] == 'ra=' or line[:3] == 'RA=': self.ra = line[3:]
+                if line[:3] == 'ie=' or line[:3] == 'IE=': self.ie = line[3:]
             if method == 'DEF': method = config['otherSettings']['default']
             if method == 'RDP': 
-                self.remCon = threading.Thread(target = self.rdpConnection, args = (self, conIP))
-                self.remCon.start()
+                self.rdpConnection(conIP)
             elif method == 'RA': 
-                self.remCon = threading.Thread(target = self.radminConnection, args = (self, conIP))
-                self.remCon.start()
+                self.radminConnection(conIP)
             elif method == 'IE':
                 self.browserConnection(conIP)
     
-    def rdpConnection(self, parent, host):
+    def rdpConnection(self, host):
         config = configparser.ConfigParser(allow_no_value = True)
         config.read('settings.ini')
         if  platform.system().lower()=="windows":
@@ -403,35 +389,51 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 command3 = 'mstsc /v:' + host
                 if config.getboolean('rdpSettings', 'fullscreen'): command3 += ' /f'
                 else: command3 += ' /w:' + config['rdpSettings']['width'] + ' /h:' + config['rdpSettings']['heigth']
-                os.system(command1)
-                os.system(command2)
-                os.system(command3)
+                subprocess.Popen(command1, shell = True) ##os.system(command1)
+                subprocess.Popen(command2, shell = True) ##os.system(command2)
+                subprocess.Popen(command3, shell = True) ##os.system(command3)
         else:
             command = 'xfreerdp'
-        command += ' /u:' + config[host]['rdplogin'] + ' /p:' + config[host]['rdppassword']
-        command += ' /t:' + host + ' /v:' + host + ' /w:' + config['rdpSettings']['width'] + ' /h:' + config['rdpSettings']['heigth'] + ' /bpp:' + config['rdpSettings']['colordepth']
-        if config.getboolean('rdpSettings', 'fullscreen'): command += ' /f'
-        if config.getboolean('rdpSettings', 'compression'): command += ' +compression'
-        if config.getboolean('rdpSettings', 'audio'): command += ' /audio-mode'
-        if config.getboolean('rdpSettings', 'clipboard'): command += ' +clipboard'
-        if not config.getboolean('rdpSettings', 'themes'): command += ' -themes'
-        if not config.getboolean('rdpSettings', 'wallpaper'): command += ' -wallpaper'
-        print(command)
-        os.system(command)
+            command += ' /u:' + config[host]['rdplogin'] + ' /p:' + config[host]['rdppassword']
+            command += ' /t:' + host + ' /v:' + host + ' /w:' + config['rdpSettings']['width'] + ' /h:' + config['rdpSettings']['heigth'] + ' /bpp:' + config['rdpSettings']['colordepth']
+            if config.getboolean('rdpSettings', 'fullscreen'): command += ' /f'
+            if config.getboolean('rdpSettings', 'compression'): command += ' +compression'
+            if config.getboolean('rdpSettings', 'audio'): command += ' /audio-mode'
+            if config.getboolean('rdpSettings', 'clipboard'): command += ' +clipboard'
+            if not config.getboolean('rdpSettings', 'themes'): command += ' -themes'
+            if not config.getboolean('rdpSettings', 'wallpaper'): command += ' -wallpaper'
+            print(command)
+            subprocess.Popen(command, shell = True)
         
-    def radminConnection(self, parent, host):
+    def radminConnection(self, host):
         config = configparser.ConfigParser(allow_no_value = True)
         config.read('settings.ini')
         command = self.ra[:-1]
         command += ' /connect:' + host + ':' + config['radminSettings']['port'] + ' /' + config['radminSettings']['colordepth'] + 'bpp /updates:' + config['radminSettings']['updates']
         if config.getboolean('radminSettings', 'fullscreen'): command += ' /fullscreen'
-        os.system(command)
+        subprocess.Popen(command, shell = True) ##os.system(command)
 
     def browserConnection(self, host):
-        webBrowser = browser(self)
-        webBrowser.urlEdit.setText(host)
-        webBrowser.urlEdit.returnPressed.emit()
-        webBrowser.show()
+        config = configparser.ConfigParser(allow_no_value = True)
+        config.read('settings.ini')
+        if config['otherSettings']['browser'] == 'internal':
+            webBrowser = browser(self)
+            webBrowser.urlEdit.setText(host)
+            webBrowser.urlEdit.returnPressed.emit()
+            webBrowser.show()
+        else:
+            if  platform.system().lower()=="windows" and config['otherSettings']['browser'] == 'midori':
+                if len(self.ie) > 5: ##чтобы не париться, если при разборе попадут пробелы или перевод строки
+                    command = self.ie[:-1]
+                    arg = "-a " + host
+            elif config['otherSettings']['browser'] == 'midori':
+                command = 'midori'
+                arg = "-a " + host
+            else:
+                    command = config['otherSettings']['browser']
+                    arg = host
+            print(command, '', arg)
+            subprocess.Popen((command + ' ' + arg), shell = True)##os.system(command)
         
     @pyqtSlot()
     def closeEvent(self, event):

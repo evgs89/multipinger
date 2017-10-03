@@ -4,9 +4,9 @@
 Module implementing browser.
 """
 
-from PyQt5.QtCore import pyqtSlot, QUrl, QFileInfo
+from PyQt5.QtCore import pyqtSlot, QUrl
 from PyQt5.QtWidgets import QMainWindow, QFileDialog
-from PyQt5 import QtWebKit, QtWebKitWidgets, QtNetwork
+from PyQt5 import QtWebKitWidgets, QtNetwork
 
 from .Ui_browser import Ui_browserWindow
 

@@ -22,10 +22,12 @@ class Settings(QDialog, Ui_Settings):
         self.config.read('settings.ini')
         self.rdp = ''
         self.ra = ''
+        self.ie=''
         pathfile = open('paths.ini',  'r')
         for line in pathfile:
             if line[:4] == 'rdp=' or line[:4] == 'RDP=': self.rdp = line[4:]
             if line[:3] == 'ra=' or line[:3] == 'RA=': self.ra = line[3:]
+            if line[:3] == 'ie=' or line[:3] == 'IE=': self.ie = line[3:]
         #Program Settings reading
         self.defaultIp.setText(self.config['otherSettings']['defaultip'])
         a = {'RDP':0, 'RA':1, 'IE':2}
@@ -55,8 +57,18 @@ class Settings(QDialog, Ui_Settings):
         self.updates.setValue(int(self.config['radminSettings']['updates']))
         self.lineEdit_3.setText(self.ra)
         self.fullscreenRA.setChecked(self.config.getboolean('radminSettings', 'fullscreen'))
+        #IE settings
+        self.midoriPath.setText(self.ie)
+        d = {'internal':0,  'midori':1,  'firefox':2}
+        if (self.config['otherSettings']['browser']) in d.keys():
+            index = d[self.config['otherSettings']['browser']]
+            self.browser.setCurrentIndex(index)
+        else:
+            self.browser.addItem(self.config['otherSettings']['browser'])
+            self.browser.setCurrentIndex(3)
         #
         self.tabWidget.setCurrentIndex(0)
+        #
 
     
     @pyqtSlot()
@@ -87,10 +99,14 @@ class Settings(QDialog, Ui_Settings):
         self.config['radminSettings']['updates'] = str(self.updates.value())
         self.ra = self.lineEdit_3.text()
         self.config['radminSettings']['fullscreen'] = str(self.fullscreenRA.isChecked())
+        #IE settings
+        self.config['otherSettings']['browser'] = self.browser.currentText()
+        self.ie = self.midoriPath.text()
         #save settings to file
         lines = []
         lines.append('rdp=' + self.rdp + '\n')
         lines.append('ra=' + self.ra + '\n')
+        lines.append('ie=' + self.ie + '\n')
         settingsFile = open('paths.ini',  'w')
         settingsFile.writelines(lines)
         settingsFile.close()

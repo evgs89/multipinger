@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file '/home/es89/Dropbox/Projects/Python/MultiPing_v2/ui/settings.ui'
 #
-# Created by: PyQt5 UI code generator 5.5.1
+# Created by: PyQt5 UI code generator 5.9
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -184,6 +184,50 @@ class Ui_Settings(object):
         self.gridLayout.setColumnStretch(1, 1)
         self.formLayout.setLayout(0, QtWidgets.QFormLayout.SpanningRole, self.gridLayout)
         self.tabWidget.addTab(self.tab_3, "")
+        self.tab_4 = QtWidgets.QWidget()
+        self.tab_4.setObjectName("tab_4")
+        self.formLayoutWidget = QtWidgets.QWidget(self.tab_4)
+        self.formLayoutWidget.setGeometry(QtCore.QRect(0, 0, 331, 201))
+        self.formLayoutWidget.setObjectName("formLayoutWidget")
+        self.formLayout_2 = QtWidgets.QFormLayout(self.formLayoutWidget)
+        self.formLayout_2.setFieldGrowthPolicy(QtWidgets.QFormLayout.ExpandingFieldsGrow)
+        self.formLayout_2.setRowWrapPolicy(QtWidgets.QFormLayout.WrapLongRows)
+        self.formLayout_2.setContentsMargins(0, 0, 0, 0)
+        self.formLayout_2.setHorizontalSpacing(5)
+        self.formLayout_2.setObjectName("formLayout_2")
+        self.browser = QtWidgets.QComboBox(self.formLayoutWidget)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.browser.sizePolicy().hasHeightForWidth())
+        self.browser.setSizePolicy(sizePolicy)
+        self.browser.setMinimumSize(QtCore.QSize(95, 0))
+        self.browser.setEditable(True)
+        self.browser.setObjectName("browser")
+        self.browser.addItem("")
+        self.browser.addItem("")
+        self.browser.addItem("")
+        self.formLayout_2.setWidget(0, QtWidgets.QFormLayout.LabelRole, self.browser)
+        self.label_14 = QtWidgets.QLabel(self.formLayoutWidget)
+        self.label_14.setMinimumSize(QtCore.QSize(220, 0))
+        self.label_14.setLineWidth(2)
+        self.label_14.setTextFormat(QtCore.Qt.RichText)
+        self.label_14.setWordWrap(True)
+        self.label_14.setObjectName("label_14")
+        self.formLayout_2.setWidget(0, QtWidgets.QFormLayout.FieldRole, self.label_14)
+        self.label_15 = QtWidgets.QLabel(self.formLayoutWidget)
+        self.label_15.setObjectName("label_15")
+        self.formLayout_2.setWidget(1, QtWidgets.QFormLayout.LabelRole, self.label_15)
+        self.midoriPath = QtWidgets.QLineEdit(self.formLayoutWidget)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.MinimumExpanding, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.midoriPath.sizePolicy().hasHeightForWidth())
+        self.midoriPath.setSizePolicy(sizePolicy)
+        self.midoriPath.setMinimumSize(QtCore.QSize(125, 0))
+        self.midoriPath.setObjectName("midoriPath")
+        self.formLayout_2.setWidget(1, QtWidgets.QFormLayout.FieldRole, self.midoriPath)
+        self.tabWidget.addTab(self.tab_4, "")
         self.verticalLayout.addWidget(self.tabWidget)
         self.buttonBox = QtWidgets.QDialogButtonBox(Settings)
         self.buttonBox.setStandardButtons(QtWidgets.QDialogButtonBox.Cancel|QtWidgets.QDialogButtonBox.Ok)
@@ -192,7 +236,7 @@ class Ui_Settings(object):
         self.horizontalLayout.addLayout(self.verticalLayout)
 
         self.retranslateUi(Settings)
-        self.tabWidget.setCurrentIndex(2)
+        self.tabWidget.setCurrentIndex(3)
         QtCore.QMetaObject.connectSlotsByName(Settings)
 
     def retranslateUi(self, Settings):
@@ -248,6 +292,12 @@ class Ui_Settings(object):
         self.label_11.setText(_translate("Settings", "Fullscreen"))
         self.label_13.setText(_translate("Settings", "Path to radmin.exe"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_3), _translate("Settings", "RAdmin settings"))
+        self.browser.setItemText(0, _translate("Settings", "internal"))
+        self.browser.setItemText(1, _translate("Settings", "midori"))
+        self.browser.setItemText(2, _translate("Settings", "firefox"))
+        self.label_14.setText(_translate("Settings", " Browser (must be accessable in console)"))
+        self.label_15.setText(_translate("Settings", "path to midori.exe"))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_4), _translate("Settings", "IE settings"))
 
 import ui.icons_rc
 

@@ -1,0 +1,20 @@
+[Desktop Entry]
+Comment[ru_RU]=
+Comment=
+Exec=python3 /home/es89/Dropbox/Projects/Python/MultiPing_v2/MultiPing.pyw
+GenericName[ru_RU]=MultiPing
+GenericName=MultiPing
+Icon=/home/es89/Dropbox/Projects/Python/MultiPing_v2/ui/icons/paperplane.png
+MimeType=
+Name[ru_RU]=MultiPing
+Name=MultiPing
+Path=/home/es89/Dropbox/Projects/Python/MultiPing_v2/
+StartupNotify=true
+Terminal=false
+TerminalOptions=
+Type=Application
+X-DBUS-ServiceName=
+X-DBUS-StartupType=none
+X-KDE-SubstituteUID=false
+X-KDE-Username=
+Categories=Network;
